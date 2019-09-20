@@ -5,4 +5,5 @@ data class ItemFeed(val title: String, val link: String, val pubDate: String, va
     override fun toString(): String {
         return title
     }
+
 }

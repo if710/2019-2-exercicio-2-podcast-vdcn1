@@ -1,5 +1,7 @@
 package br.ufpe.cin.android.podcast
 
+import android.content.ContentValues.TAG
+import android.util.Log
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import org.xmlpull.v1.XmlPullParserFactory
@@ -12,7 +14,7 @@ object Parser {
 
     //Se quiser, teste primeiro com o parser simples para exibir lista de titulos - sem informacao de link
     @Throws(XmlPullParserException::class, IOException::class)
-    fun parserSimples(rssFeed: String): List<String> {
+    fun parserSimples(rssFeed: String): ArrayList<String> {
         // pegando instancia da XmlPullParserFactory [singleton]
         val factory = XmlPullParserFactory.newInstance()
         // criando novo objeto do tipo XmlPullParser
@@ -49,16 +51,17 @@ object Parser {
 
     //Este metodo faz o parsing de RSS gerando objetos ItemFeed
     @Throws(XmlPullParserException::class, IOException::class)
-    fun parse(rssFeed: String): List<ItemFeed> {
+    fun parse(rssFeed: String): ArrayList<ItemFeed> {
         val factory = XmlPullParserFactory.newInstance()
         val xpp = factory.newPullParser()
         xpp.setInput(StringReader(rssFeed))
+        Log.d(TAG, "Texto do parser: " + rssFeed)
         xpp.nextTag()
         return readRss(xpp)
     }
 
     @Throws(XmlPullParserException::class, IOException::class)
-    fun readRss(parser: XmlPullParser): List<ItemFeed> {
+    fun readRss(parser: XmlPullParser): ArrayList<ItemFeed> {
         val items = ArrayList<ItemFeed>()
         parser.require(XmlPullParser.START_TAG, null, "rss")
         while (parser.next() != XmlPullParser.END_TAG) {
@@ -99,6 +102,7 @@ object Parser {
         var link: String? = null
         var pubDate: String? = null
         var description: String? = null
+        var downloadLink: String? = null
         parser.require(XmlPullParser.START_TAG, null, "item")
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.eventType != XmlPullParser.START_TAG) {
@@ -113,11 +117,15 @@ object Parser {
                 pubDate = readData(parser, "pubDate")
             } else if (name == "description") {
                 description = readData(parser, "description")
+            } else if(name == "downloadLink"){
+                downloadLink = readData(parser,"downloadLink")
             } else {
                 skip(parser)
             }
         }
-        return ItemFeed(title!!, link!!, pubDate!!, description!!, "carregar o link")
+        if(downloadLink == null) downloadLink = ""
+
+        return ItemFeed(title!!, link!!, pubDate!!, description!!, downloadLink)
     }
 
     // Processa tags de forma parametrizada no feed.
